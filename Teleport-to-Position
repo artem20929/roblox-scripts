@@ -16,7 +16,6 @@ local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 
--- Настройка GUI
 ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.Name = "TeleportTool"
 ScreenGui.ResetOnSpawn = false
@@ -30,7 +29,6 @@ Frame.Active = true
 Frame.Draggable = true
 Frame.ClipsDescendants = true
 
--- Космический фон
 local spaceBackground = Instance.new("ImageLabel")
 spaceBackground.Parent = Frame
 spaceBackground.Size = UDim2.new(1, 0, 1, 0)
@@ -40,7 +38,6 @@ spaceBackground.Image = "rbxassetid://2151741365"
 spaceBackground.ImageTransparency = 1
 spaceBackground.ZIndex = 0
 
--- Надпись "by artem20929"
 local introLabel = Instance.new("TextLabel")
 introLabel.Parent = Frame
 introLabel.Size = UDim2.new(1, 0, 1, 0)
@@ -53,7 +50,6 @@ introLabel.TextSize = 40
 introLabel.TextTransparency = 1
 introLabel.ZIndex = 1
 
--- Элементы интерфейса
 Title.Parent = Frame
 Title.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 Title.BorderSizePixel = 0
@@ -65,7 +61,6 @@ Title.TextSize = 18
 Title.ZIndex = 2
 Title.Visible = false
 
--- Функция для создания скругленных кнопок
 local function createRoundedButton(name, position, size, color, text)
     local button = Instance.new("TextButton")
     button.Name = name
@@ -80,32 +75,18 @@ local function createRoundedButton(name, position, size, color, text)
     button.ZIndex = 2
     button.Visible = false
     button.Parent = Frame
-    
-    -- Добавляем скругление
     local corner = Instance.new("UICorner")
     corner.CornerRadius = UDim.new(0, 8)
     corner.Parent = button
-    
     return button
 end
 
--- Создаем кнопки с скруглением
-SaveButton = createRoundedButton("SaveButton", UDim2.new(0.055, 0, 0.25, 0), UDim2.new(0, 100, 0, 35), 
-    Color3.fromRGB(70, 120, 70), "Save Position")
+SaveButton = createRoundedButton("SaveButton", UDim2.new(0.055, 0, 0.25, 0), UDim2.new(0, 100, 0, 35), Color3.fromRGB(70, 120, 70), "Save Position")
+PickButton = createRoundedButton("PickButton", UDim2.new(0.38, 0, 0.25, 0), UDim2.new(0, 100, 0, 35), Color3.fromRGB(120, 70, 120), "Pick Position")
+TeleportButton = createRoundedButton("TeleportButton", UDim2.new(0.705, 0, 0.25, 0), UDim2.new(0, 100, 0, 35), Color3.fromRGB(222, 20, 20), "Teleport")
+ClearButton = createRoundedButton("ClearButton", UDim2.new(0.055, 0, 0.65, 0), UDim2.new(0, 100, 0, 35), Color3.fromRGB(120, 70, 70), "Clear Positions")
+CloseButton = createRoundedButton("CloseButton", UDim2.new(0.38, 0, 0.65, 0), UDim2.new(0, 100, 0, 35), Color3.fromRGB(120, 70, 70), "Close")
 
-PickButton = createRoundedButton("PickButton", UDim2.new(0.38, 0, 0.25, 0), UDim2.new(0, 100, 0, 35), 
-    Color3.fromRGB(120, 70, 120), "Pick Position")
-
-TeleportButton = createRoundedButton("TeleportButton", UDim2.new(0.705, 0, 0.25, 0), UDim2.new(0, 100, 0, 35), 
-    Color3.fromRGB(222, 20, 20), "Teleport")
-
-ClearButton = createRoundedButton("ClearButton", UDim2.new(0.055, 0, 0.65, 0), UDim2.new(0, 100, 0, 35), 
-    Color3.fromRGB(120, 70, 70), "Clear Positions")
-
-CloseButton = createRoundedButton("CloseButton", UDim2.new(0.38, 0, 0.65, 0), UDim2.new(0, 100, 0, 35), 
-    Color3.fromRGB(120, 70, 70), "Close")
-
--- Создаем шары для визуализации
 local savedBall = Instance.new("Part")
 savedBall.Name = "SavedPositionBall"
 savedBall.Shape = Enum.PartType.Ball
@@ -113,11 +94,11 @@ savedBall.Size = Vector3.new(1.5, 1.5, 1.5)
 savedBall.Anchored = true
 savedBall.CanCollide = false
 savedBall.Material = Enum.Material.Neon
-savedBall.Color = Color3.fromRGB(255, 255, 0) -- Желтый
+savedBall.Color = Color3.fromRGB(255, 255, 0)
 savedBall.Transparency = 0.5
 savedBall.Parent = workspace
 savedBall.CFrame = CFrame.new(0, 100, 0)
-savedBall.Transparency = 1 -- Начинаем невидимым
+savedBall.Transparency = 1
 
 local previewBall = Instance.new("Part")
 previewBall.Name = "PositionPreviewBall"
@@ -126,35 +107,29 @@ previewBall.Size = Vector3.new(1.5, 1.5, 1.5)
 previewBall.Anchored = true
 previewBall.CanCollide = false
 previewBall.Material = Enum.Material.Neon
-previewBall.Color = Color3.fromRGB(0, 255, 0) -- Зеленый
+previewBall.Color = Color3.fromRGB(0, 255, 0)
 previewBall.Transparency = 0.5
 previewBall.Parent = workspace
 previewBall.CFrame = CFrame.new(0, 100, 0)
-previewBall.Transparency = 1 -- Начинаем невидимым
+previewBall.Transparency = 1
 
 local savedPosition = nil
 local selectingPosition = false
 
--- Анимация запуска
 local function startupAnimation()
     Frame.Visible = true
-
     local fadeInBackground = TweenInfo.new(0.5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
     local backgroundTween = TweenService:Create(spaceBackground, fadeInBackground, {ImageTransparency = 0.3})
     backgroundTween:Play()
-    
     backgroundTween.Completed:Connect(function()
         local fadeInText = TweenInfo.new(0.5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
         local textTween = TweenService:Create(introLabel, fadeInText, {TextTransparency = 0})
         textTween:Play()
-        
         textTween.Completed:Connect(function()
             wait(1.5)
-            
             local fadeOut = TweenInfo.new(0.5, Enum.EasingStyle.Linear, Enum.EasingDirection.In)
             local fadeOutTween = TweenService:Create(introLabel, fadeOut, {TextTransparency = 1})
             fadeOutTween:Play()
-            
             fadeOutTween.Completed:Connect(function()
                 introLabel:Destroy()
                 Title.Visible = true
@@ -168,7 +143,6 @@ local function startupAnimation()
     end)
 end
 
--- Анимация закрытия
 local function closeAnimation(callback)
     local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
     local tween = TweenService:Create(Frame, tweenInfo, {Size = UDim2.new(0, 0, 0, 180)})
@@ -176,7 +150,6 @@ local function closeAnimation(callback)
     tween.Completed:Connect(callback)
 end
 
--- Функции для работы с координатами
 local function savePosition(position)
     savedPosition = position or humanoidRootPart.Position
     savedBall.CFrame = CFrame.new(savedPosition)
@@ -194,47 +167,27 @@ local function teleportToPosition()
     end
 end
 
--- Функции кнопок
-SaveButton.MouseButton1Click:Connect(function()
-    savePosition()
-end)
-
+SaveButton.MouseButton1Click:Connect(function() savePosition() end)
 PickButton.MouseButton1Click:Connect(function()
     selectingPosition = not selectingPosition
-    
     if selectingPosition then
         PickButton.Text = "Selecting..."
         previewBall.Transparency = 0.5
-        
         local connection
         connection = RunService.Heartbeat:Connect(function()
-            if not selectingPosition then
-                connection:Disconnect()
-                return
-            end
-            
+            if not selectingPosition then connection:Disconnect() return end
             local mouse = player:GetMouse()
             local ray = Ray.new(mouse.UnitRay.Origin, mouse.UnitRay.Direction * 1000)
             local hitPart, hitPosition = workspace:FindPartOnRayWithIgnoreList(ray, {player.Character, previewBall, savedBall})
-            
-            if hitPart then
-                previewBall.CFrame = CFrame.new(hitPosition + Vector3.new(0, previewBall.Size.Y/2, 0))
-            else
-                previewBall.Transparency = 1
-            end
+            if hitPart then previewBall.CFrame = CFrame.new(hitPosition + Vector3.new(0, previewBall.Size.Y/2, 0)) else previewBall.Transparency = 1 end
         end)
-        
         local inputConnection
         inputConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
             if input.UserInputType == Enum.UserInputType.MouseButton1 and not gameProcessed then
                 local mouse = player:GetMouse()
                 local ray = Ray.new(mouse.UnitRay.Origin, mouse.UnitRay.Direction * 1000)
                 local hitPart, hitPosition = workspace:FindPartOnRayWithIgnoreList(ray, {player.Character, previewBall, savedBall})
-                
-                if hitPart then
-                    savePosition(hitPosition + Vector3.new(0, previewBall.Size.Y/2, 0))
-                end
-                
+                if hitPart then savePosition(hitPosition + Vector3.new(0, previewBall.Size.Y/2, 0)) end
                 selectingPosition = false
                 PickButton.Text = "Pick Position"
                 previewBall.Transparency = 1
@@ -246,33 +199,17 @@ PickButton.MouseButton1Click:Connect(function()
         previewBall.Transparency = 1
     end
 end)
+TeleportButton.MouseButton1Click:Connect(function() teleportToPosition() end)
+ClearButton.MouseButton1Click:Connect(function() clearPositions() end)
+CloseButton.MouseButton1Click:Connect(function() closeAnimation(function() ScreenGui:Destroy() savedBall:Destroy() previewBall:Destroy() end) end)
 
-TeleportButton.MouseButton1Click:Connect(function()
-    teleportToPosition()
-end)
-
-ClearButton.MouseButton1Click:Connect(function()
-    clearPositions()
-end)
-
-CloseButton.MouseButton1Click:Connect(function()
-    closeAnimation(function()
-        ScreenGui:Destroy()
-        savedBall:Destroy()
-        previewBall:Destroy()
-    end)
-end)
-
--- Анимация наведения на кнопки
 local function buttonHoverEffect(button)
     local originalColor = button.BackgroundColor3
     button.MouseEnter:Connect(function()
-        local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-        TweenService:Create(button, tweenInfo, {BackgroundColor3 = originalColor:Lerp(Color3.fromRGB(255, 255, 255), 0.2)}):Play()
+        TweenService:Create(button, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = originalColor:Lerp(Color3.fromRGB(255, 255, 255), 0.2)}):Play()
     end)
     button.MouseLeave:Connect(function()
-        local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
-        TweenService:Create(button, tweenInfo, {BackgroundColor3 = originalColor}):Play()
+        TweenService:Create(button, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = originalColor}):Play()
     end)
 end
 
@@ -282,5 +219,4 @@ buttonHoverEffect(TeleportButton)
 buttonHoverEffect(ClearButton)
 buttonHoverEffect(CloseButton)
 
--- Запуск анимации при старте
 startupAnimation()
