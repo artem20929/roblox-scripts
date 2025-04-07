@@ -81,7 +81,7 @@ local function createRoundedButton(name, position, size, color, text)
     return button
 end
 
-SaveButton = createRoundedButton("SaveButton", UDim2.new(0.055, 0, 0.25, 0), UDim2.new(0, 100, 0, 35), Color3.fromRGB(70, 120, 70), "Save 1Position")
+SaveButton = createRoundedButton("SaveButton", UDim2.new(0.055, 0, 0.25, 0), UDim2.new(0, 100, 0, 35), Color3.fromRGB(70, 120, 70), "Save Position")
 PickButton = createRoundedButton("PickButton", UDim2.new(0.38, 0, 0.25, 0), UDim2.new(0, 100, 0, 35), Color3.fromRGB(120, 70, 120), "Pick Position")
 TeleportButton = createRoundedButton("TeleportButton", UDim2.new(0.705, 0, 0.25, 0), UDim2.new(0, 100, 0, 35), Color3.fromRGB(222, 20, 20), "Teleport")
 ClearButton = createRoundedButton("ClearButton", UDim2.new(0.055, 0, 0.65, 0), UDim2.new(0, 100, 0, 35), Color3.fromRGB(120, 70, 70), "Clear Positions")
