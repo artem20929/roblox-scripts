@@ -16,6 +16,10 @@ local character = player.Character or player.CharacterAdded:Wait()
 local humanoid = character:WaitForChild("Humanoid")
 local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
 
+local savedPosition = nil
+local savedBall = nil
+local selectingPosition = false
+
 ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 ScreenGui.Name = "TeleportTool"
 ScreenGui.ResetOnSpawn = false
@@ -87,34 +91,22 @@ TeleportButton = createRoundedButton("TeleportButton", UDim2.new(0.705, 0, 0.25,
 ClearButton = createRoundedButton("ClearButton", UDim2.new(0.055, 0, 0.65, 0), UDim2.new(0, 100, 0, 35), Color3.fromRGB(120, 70, 70), "Clear Positions")
 CloseButton = createRoundedButton("CloseButton", UDim2.new(0.38, 0, 0.65, 0), UDim2.new(0, 100, 0, 35), Color3.fromRGB(120, 70, 70), "Close")
 
-local savedBall = Instance.new("Part")
-savedBall.Name = "SavedPositionBall"
-savedBall.Shape = Enum.PartType.Ball
-savedBall.Size = Vector3.new(1.5, 1.5, 1.5)
-savedBall.Anchored = true
-savedBall.CanCollide = false
-savedBall.Material = Enum.Material.Neon
-savedBall.Color = Color3.fromRGB(255, 255, 0)
-savedBall.Transparency = 0.5
-savedBall.Parent = workspace
-savedBall.CFrame = CFrame.new(0, 100, 0)
-savedBall.Transparency = 1
+local function createPreviewBall()
+    local ball = Instance.new("Part")
+    ball.Name = "PositionPreviewBall"
+    ball.Shape = Enum.PartType.Ball
+    ball.Size = Vector3.new(1.5, 1.5, 1.5)
+    ball.Anchored = true
+    ball.CanCollide = false
+    ball.Material = Enum.Material.Neon
+    ball.Color = Color3.fromRGB(0, 255, 0)
+    ball.Transparency = 1
+    ball.Parent = workspace
+    ball.CFrame = CFrame.new(0, 100, 0)
+    return ball
+end
 
-local previewBall = Instance.new("Part")
-previewBall.Name = "PositionPreviewBall"
-previewBall.Shape = Enum.PartType.Ball
-previewBall.Size = Vector3.new(1.5, 1.5, 1.5)
-previewBall.Anchored = true
-previewBall.CanCollide = false
-previewBall.Material = Enum.Material.Neon
-previewBall.Color = Color3.fromRGB(0, 255, 0)
-previewBall.Transparency = 0.5
-previewBall.Parent = workspace
-previewBall.CFrame = CFrame.new(0, 100, 0)
-previewBall.Transparency = 1
-
-local savedPosition = nil
-local selectingPosition = false
+local previewBall = createPreviewBall()
 
 local function startupAnimation()
     Frame.Visible = true
@@ -151,23 +143,67 @@ local function closeAnimation(callback)
 end
 
 local function savePosition(position)
-    savedPosition = position or humanoidRootPart.Position
-    savedBall.CFrame = CFrame.new(savedPosition)
+    position = position or (player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character.HumanoidRootPart.Position)
+    if not position then return end
+    
+    savedPosition = position
+    
+    if savedBall then
+        savedBall:Destroy()
+    end
+    
+    savedBall = Instance.new("Part")
+    savedBall.Name = "SavedPositionBall"
+    savedBall.Shape = Enum.PartType.Ball
+    savedBall.Size = Vector3.new(1.5, 1.5, 1.5)
+    savedBall.Anchored = true
+    savedBall.CanCollide = false
+    savedBall.Material = Enum.Material.Neon
+    savedBall.Color = Color3.fromRGB(255, 255, 0)
     savedBall.Transparency = 0.5
+    savedBall.Parent = workspace
+    savedBall.CFrame = CFrame.new(savedPosition)
 end
 
 local function clearPositions()
     savedPosition = nil
-    savedBall.Transparency = 1
-end
-
-local function teleportToPosition()
-    if savedPosition then
-        humanoidRootPart.CFrame = CFrame.new(savedPosition)
+    if savedBall then
+        savedBall:Destroy()
+        savedBall = nil
     end
 end
 
-SaveButton.MouseButton1Click:Connect(function() savePosition() end)
+local function teleportToPosition()
+    if not savedPosition then return end
+    
+    if not player.Character then
+        player.CharacterAdded:Wait()
+    end
+    
+    local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
+    while not rootPart do
+        wait(0.1)
+        rootPart = player.Character:FindFirstChild("HumanoidRootPart")
+    end
+    
+    rootPart.CFrame = CFrame.new(savedPosition)
+end
+
+player.CharacterAdded:Connect(function(newCharacter)
+    character = newCharacter
+    humanoid = character:WaitForChild("Humanoid")
+    humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+    
+    if savedPosition and savedBall then
+        savedBall.CFrame = CFrame.new(savedPosition)
+        savedBall.Transparency = 0.5
+    end
+end)
+
+SaveButton.MouseButton1Click:Connect(function() 
+    savePosition() 
+end)
+
 PickButton.MouseButton1Click:Connect(function()
     selectingPosition = not selectingPosition
     if selectingPosition then
@@ -175,19 +211,29 @@ PickButton.MouseButton1Click:Connect(function()
         previewBall.Transparency = 0.5
         local connection
         connection = RunService.Heartbeat:Connect(function()
-            if not selectingPosition then connection:Disconnect() return end
+            if not selectingPosition then 
+                connection:Disconnect() 
+                return 
+            end
             local mouse = player:GetMouse()
             local ray = Ray.new(mouse.UnitRay.Origin, mouse.UnitRay.Direction * 1000)
             local hitPart, hitPosition = workspace:FindPartOnRayWithIgnoreList(ray, {player.Character, previewBall, savedBall})
-            if hitPart then previewBall.CFrame = CFrame.new(hitPosition + Vector3.new(0, previewBall.Size.Y/2, 0)) else previewBall.Transparency = 1 end
+            if hitPart then 
+                previewBall.CFrame = CFrame.new(hitPosition + Vector3.new(0, previewBall.Size.Y/2, 0)) 
+            else 
+                previewBall.Transparency = 1 
+            end
         end)
+        
         local inputConnection
         inputConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
             if input.UserInputType == Enum.UserInputType.MouseButton1 and not gameProcessed then
                 local mouse = player:GetMouse()
                 local ray = Ray.new(mouse.UnitRay.Origin, mouse.UnitRay.Direction * 1000)
                 local hitPart, hitPosition = workspace:FindPartOnRayWithIgnoreList(ray, {player.Character, previewBall, savedBall})
-                if hitPart then savePosition(hitPosition + Vector3.new(0, previewBall.Size.Y/2, 0)) end
+                if hitPart then 
+                    savePosition(hitPosition + Vector3.new(0, previewBall.Size.Y/2, 0)) 
+                end
                 selectingPosition = false
                 PickButton.Text = "Pick Position"
                 previewBall.Transparency = 1
@@ -199,9 +245,22 @@ PickButton.MouseButton1Click:Connect(function()
         previewBall.Transparency = 1
     end
 end)
-TeleportButton.MouseButton1Click:Connect(function() teleportToPosition() end)
-ClearButton.MouseButton1Click:Connect(function() clearPositions() end)
-CloseButton.MouseButton1Click:Connect(function() closeAnimation(function() ScreenGui:Destroy() savedBall:Destroy() previewBall:Destroy() end) end)
+
+TeleportButton.MouseButton1Click:Connect(function() 
+    teleportToPosition() 
+end)
+
+ClearButton.MouseButton1Click:Connect(function() 
+    clearPositions() 
+end)
+
+CloseButton.MouseButton1Click:Connect(function() 
+    closeAnimation(function() 
+        ScreenGui:Destroy() 
+        if savedBall then savedBall:Destroy() end
+        previewBall:Destroy() 
+    end) 
+end)
 
 local function buttonHoverEffect(button)
     local originalColor = button.BackgroundColor3
