@@ -1,0 +1,281 @@
+local ScreenGui = Instance.new("ScreenGui")
+local Frame = Instance.new("Frame")
+local SaveButton = Instance.new("TextButton")
+local TeleportButton = Instance.new("TextButton")
+local PickButton = Instance.new("TextButton")
+local CloseButton = Instance.new("TextButton")
+local ClearButton = Instance.new("TextButton")
+local Title = Instance.new("TextLabel")
+local TweenService = game:GetService("TweenService")
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+
+local player = Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+local humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+
+local savedPosition = nil
+local savedBall = nil
+local selectingPosition = false
+
+ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+ScreenGui.Name = "TeleportTool"
+ScreenGui.ResetOnSpawn = false
+
+Frame.Parent = ScreenGui
+Frame.BackgroundTransparency = 1
+Frame.BorderSizePixel = 0
+Frame.Position = UDim2.new(0.25, 0, 0.3, 0)
+Frame.Size = UDim2.new(0, 360, 0, 150)
+Frame.Active = true
+Frame.Draggable = true
+Frame.ClipsDescendants = true
+
+local spaceBackground = Instance.new("ImageLabel")
+spaceBackground.Parent = Frame
+spaceBackground.Size = UDim2.new(1, 0, 1, 0)
+spaceBackground.Position = UDim2.new(0, 0, 0, 0)
+spaceBackground.BackgroundTransparency = 1
+spaceBackground.Image = "rbxassetid://2151741365"
+spaceBackground.ImageTransparency = 1
+spaceBackground.ZIndex = 0
+
+local introLabel = Instance.new("TextLabel")
+introLabel.Parent = Frame
+introLabel.Size = UDim2.new(1, 0, 1, 0)
+introLabel.Position = UDim2.new(0, 0, 0, 0)
+introLabel.BackgroundTransparency = 1
+introLabel.Text = "by artem20929"
+introLabel.Font = Enum.Font.Cartoon
+introLabel.TextColor3 = Color3.fromRGB(72, 43, 255)
+introLabel.TextSize = 40
+introLabel.TextTransparency = 1
+introLabel.ZIndex = 1
+
+Title.Parent = Frame
+Title.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+Title.BorderSizePixel = 0
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.Font = Enum.Font.Cartoon
+Title.Text = "Teleport Tool"
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.TextSize = 18
+Title.ZIndex = 2
+Title.Visible = false
+
+local function createRoundedButton(name, position, size, color, text)
+    local button = Instance.new("TextButton")
+    button.Name = name
+    button.BackgroundColor3 = color
+    button.BorderSizePixel = 0
+    button.Position = position
+    button.Size = size
+    button.Font = Enum.Font.Cartoon
+    button.Text = text
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    button.TextSize = 16
+    button.ZIndex = 2
+    button.Visible = false
+    button.Parent = Frame
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, 8)
+    corner.Parent = button
+    return button
+end
+
+SaveButton = createRoundedButton("SaveButton", UDim2.new(0.055, 0, 0.25, 0), UDim2.new(0, 100, 0, 35), Color3.fromRGB(70, 120, 70), "Save Position")
+PickButton = createRoundedButton("PickButton", UDim2.new(0.38, 0, 0.25, 0), UDim2.new(0, 100, 0, 35), Color3.fromRGB(120, 70, 120), "Pick Position")
+TeleportButton = createRoundedButton("TeleportButton", UDim2.new(0.705, 0, 0.25, 0), UDim2.new(0, 100, 0, 35), Color3.fromRGB(222, 20, 20), "Teleport")
+ClearButton = createRoundedButton("ClearButton", UDim2.new(0.055, 0, 0.65, 0), UDim2.new(0, 100, 0, 35), Color3.fromRGB(120, 70, 70), "Clear Positions")
+CloseButton = createRoundedButton("CloseButton", UDim2.new(0.38, 0, 0.65, 0), UDim2.new(0, 100, 0, 35), Color3.fromRGB(120, 70, 70), "Close")
+
+local function createPreviewBall()
+    local ball = Instance.new("Part")
+    ball.Name = "PositionPreviewBall"
+    ball.Shape = Enum.PartType.Ball
+    ball.Size = Vector3.new(1.5, 1.5, 1.5)
+    ball.Anchored = true
+    ball.CanCollide = false
+    ball.Material = Enum.Material.Neon
+    ball.Color = Color3.fromRGB(0, 255, 0)
+    ball.Transparency = 1
+    ball.Parent = workspace
+    ball.CFrame = CFrame.new(0, 100, 0)
+    return ball
+end
+
+local previewBall = createPreviewBall()
+
+local function startupAnimation()
+    Frame.Visible = true
+    local fadeInBackground = TweenInfo.new(0.5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+    local backgroundTween = TweenService:Create(spaceBackground, fadeInBackground, {ImageTransparency = 0.3})
+    backgroundTween:Play()
+    backgroundTween.Completed:Connect(function()
+        local fadeInText = TweenInfo.new(0.5, Enum.EasingStyle.Linear, Enum.EasingDirection.Out)
+        local textTween = TweenService:Create(introLabel, fadeInText, {TextTransparency = 0})
+        textTween:Play()
+        textTween.Completed:Connect(function()
+            wait(1.5)
+            local fadeOut = TweenInfo.new(0.5, Enum.EasingStyle.Linear, Enum.EasingDirection.In)
+            local fadeOutTween = TweenService:Create(introLabel, fadeOut, {TextTransparency = 1})
+            fadeOutTween:Play()
+            fadeOutTween.Completed:Connect(function()
+                introLabel:Destroy()
+                Title.Visible = true
+                SaveButton.Visible = true
+                PickButton.Visible = true
+                TeleportButton.Visible = true
+                CloseButton.Visible = true
+                ClearButton.Visible = true
+            end)
+        end)
+    end)
+end
+
+local function closeAnimation(callback)
+    local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
+    local tween = TweenService:Create(Frame, tweenInfo, {Size = UDim2.new(0, 0, 0, 180)})
+    tween:Play()
+    tween.Completed:Connect(callback)
+end
+
+local function savePosition(position)
+    position = position or (player.Character and player.Character:FindFirstChild("HumanoidRootPart") and player.Character.HumanoidRootPart.Position)
+    if not position then return end
+    
+    savedPosition = position
+    
+    if savedBall then
+        savedBall:Destroy()
+    end
+    
+    savedBall = Instance.new("Part")
+    savedBall.Name = "SavedPositionBall"
+    savedBall.Shape = Enum.PartType.Ball
+    savedBall.Size = Vector3.new(1.5, 1.5, 1.5)
+    savedBall.Anchored = true
+    savedBall.CanCollide = false
+    savedBall.Material = Enum.Material.Neon
+    savedBall.Color = Color3.fromRGB(255, 255, 0)
+    savedBall.Transparency = 0.5
+    savedBall.Parent = workspace
+    savedBall.CFrame = CFrame.new(savedPosition)
+end
+
+local function clearPositions()
+    savedPosition = nil
+    if savedBall then
+        savedBall:Destroy()
+        savedBall = nil
+    end
+end
+
+local function teleportToPosition()
+    if not savedPosition then return end
+    
+    if not player.Character then
+        player.CharacterAdded:Wait()
+    end
+    
+    local rootPart = player.Character:FindFirstChild("HumanoidRootPart")
+    while not rootPart do
+        wait(0.1)
+        rootPart = player.Character:FindFirstChild("HumanoidRootPart")
+    end
+    
+    rootPart.CFrame = CFrame.new(savedPosition)
+end
+
+player.CharacterAdded:Connect(function(newCharacter)
+    character = newCharacter
+    humanoid = character:WaitForChild("Humanoid")
+    humanoidRootPart = character:WaitForChild("HumanoidRootPart")
+    
+    if savedPosition and savedBall then
+        savedBall.CFrame = CFrame.new(savedPosition)
+        savedBall.Transparency = 0.5
+    end
+end)
+
+SaveButton.MouseButton1Click:Connect(function() 
+    savePosition() 
+end)
+
+PickButton.MouseButton1Click:Connect(function()
+    selectingPosition = not selectingPosition
+    if selectingPosition then
+        PickButton.Text = "Selecting..."
+        previewBall.Transparency = 0.5
+        local connection
+        connection = RunService.Heartbeat:Connect(function()
+            if not selectingPosition then 
+                connection:Disconnect() 
+                return 
+            end
+            local mouse = player:GetMouse()
+            local ray = Ray.new(mouse.UnitRay.Origin, mouse.UnitRay.Direction * 1000)
+            local hitPart, hitPosition = workspace:FindPartOnRayWithIgnoreList(ray, {player.Character, previewBall, savedBall})
+            if hitPart then 
+                previewBall.CFrame = CFrame.new(hitPosition + Vector3.new(0, previewBall.Size.Y/2, 0)) 
+            else 
+                previewBall.Transparency = 1 
+            end
+        end)
+        
+        local inputConnection
+        inputConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+            if input.UserInputType == Enum.UserInputType.MouseButton1 and not gameProcessed then
+                local mouse = player:GetMouse()
+                local ray = Ray.new(mouse.UnitRay.Origin, mouse.UnitRay.Direction * 1000)
+                local hitPart, hitPosition = workspace:FindPartOnRayWithIgnoreList(ray, {player.Character, previewBall, savedBall})
+                if hitPart then 
+                    savePosition(hitPosition + Vector3.new(0, previewBall.Size.Y/2, 0)) 
+                end
+                selectingPosition = false
+                PickButton.Text = "Pick Position"
+                previewBall.Transparency = 1
+                inputConnection:Disconnect()
+            end
+        end)
+    else
+        PickButton.Text = "Pick Position"
+        previewBall.Transparency = 1
+    end
+end)
+
+TeleportButton.MouseButton1Click:Connect(function() 
+    teleportToPosition() 
+end)
+
+ClearButton.MouseButton1Click:Connect(function() 
+    clearPositions() 
+end)
+
+CloseButton.MouseButton1Click:Connect(function() 
+    closeAnimation(function() 
+        ScreenGui:Destroy() 
+        if savedBall then savedBall:Destroy() end
+        previewBall:Destroy() 
+    end) 
+end)
+
+local function buttonHoverEffect(button)
+    local originalColor = button.BackgroundColor3
+    button.MouseEnter:Connect(function()
+        TweenService:Create(button, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = originalColor:Lerp(Color3.fromRGB(255, 255, 255), 0.2)}):Play()
+    end)
+    button.MouseLeave:Connect(function()
+        TweenService:Create(button, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {BackgroundColor3 = originalColor}):Play()
+    end)
+end
+
+buttonHoverEffect(SaveButton)
+buttonHoverEffect(PickButton)
+buttonHoverEffect(TeleportButton)
+buttonHoverEffect(ClearButton)
+buttonHoverEffect(CloseButton)
+
+startupAnimation()
